@@ -13,6 +13,10 @@ export interface GuidedPackageOverlapNotice {
   packageOption: ConfiguratorOption;
   coveredCount: number;
   totalIncludedCount: number;
+  coveredRatio: number;
+  currentCostBasis: number;
+  savings: number | null;
+  contributingSelections: ConfiguratorOption[];
 }
 
 export interface GuidedRecommendation {
@@ -149,7 +153,13 @@ function getBestGuidedPackageOverlapNotice(
   suggestedOptions: ConfiguratorOption[],
   allOptions: ConfiguratorOption[],
 ) {
-  const suggestedOptionIds = new Set(suggestedOptions.map((option) => option.id));
+  const individuallySuggestedOptions = suggestedOptions.filter(
+    (option) => option.categoryId !== PACKAGE_CATEGORY_ID,
+  );
+  const selectedOptionIds = new Set(suggestedOptions.map((option) => option.id));
+  const suggestedOptionIds = new Set(
+    individuallySuggestedOptions.map((option) => option.id),
+  );
 
   const eligiblePackageNotices = allOptions
     .filter((option) => option.categoryId === PACKAGE_CATEGORY_ID)
@@ -159,7 +169,11 @@ function getBestGuidedPackageOverlapNotice(
           packageOption.slug as keyof typeof GUIDED_PACKAGE_OVERLAP_RULES
         ] ?? null;
 
-      if (rule === null || packageOption.includedOptionIds.length === 0) {
+      if (
+        rule === null ||
+        packageOption.includedOptionIds.length === 0 ||
+        selectedOptionIds.has(packageOption.id)
+      ) {
         return null;
       }
 
@@ -171,10 +185,25 @@ function getBestGuidedPackageOverlapNotice(
         return null;
       }
 
+      const contributingSelections = individuallySuggestedOptions.filter((option) =>
+        packageOption.includedOptionIds.includes(option.id),
+      );
+      const currentCostBasis = contributingSelections.reduce(
+        (total, option) => total + option.price,
+        0,
+      );
+
       return {
         packageOption,
         coveredCount,
         totalIncludedCount: packageOption.includedOptionIds.length,
+        coveredRatio: coveredCount / packageOption.includedOptionIds.length,
+        currentCostBasis,
+        savings:
+          currentCostBasis > packageOption.price
+            ? currentCostBasis - packageOption.price
+            : null,
+        contributingSelections,
         tier: rule.tier,
       };
     })
@@ -186,11 +215,8 @@ function getBestGuidedPackageOverlapNotice(
         return rightNotice.tier - leftNotice.tier;
       }
 
-      const leftRatio = leftNotice.coveredCount / leftNotice.totalIncludedCount;
-      const rightRatio = rightNotice.coveredCount / rightNotice.totalIncludedCount;
-
-      if (leftRatio !== rightRatio) {
-        return rightRatio - leftRatio;
+      if (leftNotice.coveredRatio !== rightNotice.coveredRatio) {
+        return rightNotice.coveredRatio - leftNotice.coveredRatio;
       }
 
       return rightNotice.coveredCount - leftNotice.coveredCount;

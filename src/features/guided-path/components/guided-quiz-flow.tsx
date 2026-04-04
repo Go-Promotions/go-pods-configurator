@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { ModelSpecDialog } from "@/features/configurator/components/model-spec-dialog";
 import { OptionDetailsDialog } from "@/features/configurator/components/option-details-dialog";
+import { applySuggestedPackageSelection } from "@/features/configurator/lib/package-suggestions";
 import { buildConfiguratorSummary } from "@/features/configurator/lib/build-configurator-summary";
 import { formatPrice, formatWeightKg } from "@/features/configurator/lib/formatters";
 import { DEFAULT_MTPLM_KG } from "@/features/configurator/lib/vehicle-constants";
@@ -85,29 +86,29 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
     const suggestedOptionIdsFromRecommendation = recommendation.suggestedOptions.map(
       (option) => option.id,
     );
-    const remainingSuggestedOptionIds =
+    const currentGuidedOptionIds =
       guidedSelectionState.recommendationKey === recommendationKey
         ? guidedSelectionState.optionIds
         : suggestedOptionIdsFromRecommendation;
-    const remainingSuggestedOptions = recommendation.suggestedOptions.filter((option) =>
-      remainingSuggestedOptionIds.includes(option.id),
-    );
+    const currentGuidedOptions = currentGuidedOptionIds
+      .map((optionId) => allOptions.find((option) => option.id === optionId))
+      .filter((option): option is (typeof allOptions)[number] => option !== undefined);
     const packageOverlapNotice = getGuidedPackageOverlapNotice(
-      remainingSuggestedOptions,
+      currentGuidedOptions,
       allOptions,
     );
     const groupedSuggestedCategories = catalogue.optionCategories
       .map((category) => ({
         id: category.id,
         name: category.name,
-        options: remainingSuggestedOptions.filter(
+        options: currentGuidedOptions.filter(
           (option) => option.categoryId === category.id,
         ),
       }))
       .filter((category) => category.options.length > 0);
     const summary = buildConfiguratorSummary({
       model: recommendation.recommendedModel,
-      selectedOptions: remainingSuggestedOptions,
+      selectedOptions: currentGuidedOptions,
     });
 
     function getBaseSuggestedOptionIds() {
@@ -125,11 +126,26 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
       });
     }
 
+    function handleToggleGuidedOption(optionId: string) {
+      const baseOptionIds = getBaseSuggestedOptionIds();
+      const isCurrentlySelected = baseOptionIds.includes(optionId);
+
+      if (isCurrentlySelected) {
+        handleRemoveSuggestedOption(optionId);
+        return;
+      }
+
+      setGuidedSelectionState({
+        recommendationKey,
+        optionIds: applySuggestedPackageSelection(optionId, baseOptionIds, allOptions),
+      });
+    }
+
     const configuratorHref = {
       pathname: "/configurator",
       query: {
         model: recommendation.recommendedModel.slug,
-        options: remainingSuggestedOptions.map((option) => option.slug).join(","),
+        options: currentGuidedOptions.map((option) => option.slug).join(","),
         step: "accessories",
       },
     } as const;
@@ -239,11 +255,35 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
             {packageOverlapNotice ? (
               <div className="mt-4 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-accent-soft)] p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-                  Package overlap
+                  Package suggestion
                 </p>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-foreground)]">
+                <h3 className="mt-2 text-lg font-semibold tracking-tight text-[var(--color-foreground)]">
                   {`${packageOverlapNotice.coveredCount} of your current suggested accessories are included in the ${packageOverlapNotice.packageOption.title}.`}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-muted-foreground)]">
+                  {packageOverlapNotice.savings !== null
+                    ? `Choosing the package instead could save ${formatPrice(packageOverlapNotice.savings)} compared with those overlapping accessories individually.`
+                    : "The package may be a cleaner way to cover the overlapping accessories already in this guided configuration."}
                 </p>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                  <OptionDetailsDialog
+                    option={packageOverlapNotice.packageOption}
+                    allOptions={allOptions}
+                    selectedModel={recommendation.recommendedModel}
+                    selectedOptionIds={currentGuidedOptionIds}
+                    onToggleOption={handleToggleGuidedOption}
+                    compatibilityLabel="Available as an upgrade package in the current catalogue."
+                    triggerLabel="View package"
+                    triggerClassName="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--color-border-strong)] bg-white px-5 py-3 text-sm font-semibold text-[var(--color-foreground)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleToggleGuidedOption(packageOverlapNotice.packageOption.id)}
+                    className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)]"
+                  >
+                    Add package instead
+                  </button>
+                </div>
               </div>
             ) : null}
 
@@ -274,8 +314,8 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
                               option={option}
                               allOptions={allOptions}
                               selectedModel={recommendation.recommendedModel}
-                              selectedOptionIds={remainingSuggestedOptionIds}
-                              onToggleOption={handleRemoveSuggestedOption}
+                              selectedOptionIds={currentGuidedOptionIds}
+                              onToggleOption={handleToggleGuidedOption}
                               compatibilityLabel="Suggested for the recommended Go-Pod model based on your answers."
                               triggerClassName="group block flex-1 text-left"
                               triggerContent={
@@ -415,7 +455,7 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
                 <div className="flex items-center justify-between gap-3">
                   <span>Suggested upgrades</span>
                   <span className="font-semibold text-[var(--color-foreground)]">
-                    {remainingSuggestedOptions.length}
+                    {currentGuidedOptions.length}
                   </span>
                 </div>
               </div>

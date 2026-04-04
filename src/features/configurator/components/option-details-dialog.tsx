@@ -1,10 +1,11 @@
 "use client";
 
-import { useId, useMemo, useState, type MouseEvent, type ReactNode } from "react";
+import { useId, useMemo, useRef, useState, type MouseEvent, type ReactNode, type UIEvent } from "react";
 
 import {
   getOptionAvailabilityState,
   getSelectedHigherTierPackageTitlesCoveringPackage,
+  getSelectedMutuallyExclusiveOption,
   getSelectedPackageTitlesCoveringOption,
 } from "@/features/configurator/lib/configurator-compatibility";
 import { formatPrice, formatWeightKg } from "@/features/configurator/lib/formatters";
@@ -125,7 +126,10 @@ export function OptionDetailsDialog({
   triggerAriaLabel,
 }: OptionDetailsDialogProps) {
   const dialogId = useId();
+  const modalScrollRef = useRef<HTMLDivElement | null>(null);
+  const lastScrollTopRef = useRef(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [activeOption, setActiveOption] = useState(option);
   const [originPackageOption, setOriginPackageOption] = useState<ConfiguratorOption | null>(
     option.includedOptionIds.length > 0 ? option : null,
@@ -172,6 +176,11 @@ export function OptionDetailsDialog({
       selectedOptionIds,
       allOptions,
     );
+  const mutuallyExclusiveSelectedOption = getSelectedMutuallyExclusiveOption(
+    activeOption,
+    selectedOptionIds,
+    allOptions,
+  );
   const displayedCompatibilityLabel =
     activeOption.id === option.id
       ? compatibilityLabel
@@ -182,13 +191,24 @@ export function OptionDetailsDialog({
     isSelectionLocked,
     coveringPackageTitles,
     coveringHigherTierPackageTitles,
+    mutuallyExclusiveSelectedOptionTitle: mutuallyExclusiveSelectedOption?.title ?? null,
   });
+
+  function resetModalScroll(behavior: ScrollBehavior) {
+    modalScrollRef.current?.scrollTo({
+      top: 0,
+      behavior,
+    });
+    lastScrollTopRef.current = 0;
+    setIsHeaderVisible(true);
+  }
 
   function handleOpen() {
     setActiveOption(option);
     setOriginPackageOption(option.includedOptionIds.length > 0 ? option : null);
     const nextImages = buildGalleryImages(option);
     setActiveImagePath(nextImages[0]?.imagePath ?? null);
+    resetModalScroll("auto");
     setIsOpen(true);
   }
 
@@ -200,6 +220,7 @@ export function OptionDetailsDialog({
     setOriginPackageOption(packageContextOption);
     const nextImages = buildGalleryImages(nextOption);
     setActiveImagePath(nextImages[0]?.imagePath ?? null);
+    resetModalScroll("smooth");
   }
 
   function handleReturnToPackage() {
@@ -210,12 +231,32 @@ export function OptionDetailsDialog({
     setActiveOption(originPackageOption);
     const nextImages = buildGalleryImages(originPackageOption);
     setActiveImagePath(nextImages[0]?.imagePath ?? null);
+    resetModalScroll("smooth");
   }
 
   function handleBackdropClick(event: MouseEvent<HTMLDivElement>) {
     if (event.target === event.currentTarget) {
       setIsOpen(false);
     }
+  }
+
+  function handleModalScroll(event: UIEvent<HTMLDivElement>) {
+    const nextScrollTop = Math.max(event.currentTarget.scrollTop, 0);
+    const scrollDelta = nextScrollTop - lastScrollTopRef.current;
+
+    if (nextScrollTop <= 24) {
+      setIsHeaderVisible(true);
+      lastScrollTopRef.current = nextScrollTop;
+      return;
+    }
+
+    if (scrollDelta > 18) {
+      setIsHeaderVisible(false);
+    } else if (scrollDelta < -18) {
+      setIsHeaderVisible(true);
+    }
+
+    lastScrollTopRef.current = nextScrollTop;
   }
 
   function handleToggleActiveOption() {
@@ -297,42 +338,53 @@ export function OptionDetailsDialog({
         >
           <div
             id={dialogId}
+            ref={modalScrollRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby={`${dialogId}-title`}
             className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-[1.75rem] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)] sm:p-8"
+            onScroll={handleModalScroll}
           >
-            <div className="flex flex-col gap-4 border-b border-[var(--color-border)] pb-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-              <div className="space-y-3">
-                {isViewingPackageDrillIn ? (
-                  <button
-                    type="button"
-                    onClick={handleReturnToPackage}
-                    className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-foreground)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+            <div
+              className={[
+                "sticky top-0 z-20 -mx-5 border-b border-[var(--color-border)] bg-white px-5 pb-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition duration-200 will-change-transform sm:-mx-8 sm:px-8",
+                isHeaderVisible
+                  ? "translate-y-0 opacity-100"
+                  : "-translate-y-[calc(100%+1rem)] opacity-0",
+              ].join(" ")}
+            >
+              <div className="flex flex-col gap-4 pt-1 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                <div className="space-y-3">
+                  {isViewingPackageDrillIn ? (
+                    <button
+                      type="button"
+                      onClick={handleReturnToPackage}
+                      className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--color-foreground)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+                    >
+                      Back to package
+                    </button>
+                  ) : null}
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-accent)]">
+                    Option details
+                  </p>
+                  <h3
+                    id={`${dialogId}-title`}
+                    className="text-2xl font-semibold tracking-tight"
                   >
-                    Back to package
-                  </button>
-                ) : null}
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-accent)]">
-                  Option details
-                </p>
-                <h3
-                  id={`${dialogId}-title`}
-                  className="text-2xl font-semibold tracking-tight"
+                    {activeOption.title}
+                  </h3>
+                  <p className="text-sm leading-6 text-[var(--color-muted-foreground)]">
+                    {activeOption.shortDescription}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-medium"
                 >
-                  {activeOption.title}
-                </h3>
-                <p className="text-sm leading-6 text-[var(--color-muted-foreground)]">
-                  {activeOption.shortDescription}
-                </p>
+                  Close
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
-              >
-                Close
-              </button>
             </div>
 
             {renderSelectionActionArea("top")}
@@ -428,16 +480,35 @@ export function OptionDetailsDialog({
                     Explore included items
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {linkedIncludedOptions.map((linkedOption) => (
-                      <button
-                        key={linkedOption.id}
-                        type="button"
-                        onClick={() => handleSwitchOption(linkedOption)}
-                        className="inline-flex items-center rounded-full border border-[var(--color-border-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-foreground)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
-                      >
-                        {linkedOption.title}
-                      </button>
-                    ))}
+                    {linkedIncludedOptions.map((linkedOption) => {
+                      const isAlreadySelectedIndividually = selectedOptionIds.includes(
+                        linkedOption.id,
+                      );
+
+                      return (
+                        <button
+                          key={linkedOption.id}
+                          type="button"
+                          onClick={() => handleSwitchOption(linkedOption)}
+                          className={[
+                            "inline-flex min-h-11 items-center rounded-full border px-4 py-2 text-sm font-medium transition",
+                            isAlreadySelectedIndividually
+                              ? "border-[#39B54A] bg-[#39B54A] text-white hover:bg-[#2f9b3d]"
+                              : "border-[var(--color-border-strong)] bg-white text-[var(--color-foreground)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]",
+                          ].join(" ")}
+                        >
+                          {isAlreadySelectedIndividually ? (
+                            <span
+                              aria-hidden="true"
+                              className="mr-2 text-sm font-semibold"
+                            >
+                              ✓
+                            </span>
+                          ) : null}
+                          {linkedOption.title}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ) : null}
@@ -466,12 +537,14 @@ interface SelectionActionCopyParams {
     | "included"
     | "included_in_package"
     | "covered_by_selected_package"
+    | "exclusive_with_selected"
     | "available"
     | "incompatible";
   isSelected: boolean;
   isSelectionLocked: boolean;
   coveringPackageTitles: string[];
   coveringHigherTierPackageTitles: string[];
+  mutuallyExclusiveSelectedOptionTitle: string | null;
 }
 
 function getSelectionActionCopy({
@@ -480,6 +553,7 @@ function getSelectionActionCopy({
   isSelectionLocked,
   coveringPackageTitles,
   coveringHigherTierPackageTitles,
+  mutuallyExclusiveSelectedOptionTitle,
 }: SelectionActionCopyParams) {
   if (isSelectionLocked) {
     return {
@@ -546,6 +620,18 @@ function getSelectionActionCopy({
       buttonLabel: "Covered by package",
       isDisabled: true,
       isPositiveState: true,
+    };
+  }
+
+  if (activeAvailabilityState === "exclusive_with_selected") {
+    return {
+      heading: "Choose one styling finish",
+      message: mutuallyExclusiveSelectedOptionTitle
+        ? `${mutuallyExclusiveSelectedOptionTitle} is already selected. Adding this option will replace it.`
+        : "This styling option cannot be combined with another selected styling option.",
+      buttonLabel: "Choose this instead",
+      isDisabled: false,
+      isPositiveState: false,
     };
   }
 

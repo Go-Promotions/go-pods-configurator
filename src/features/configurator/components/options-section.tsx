@@ -10,6 +10,7 @@ import {
 import {
   getOptionAvailabilityState,
   getSelectedHigherTierPackageTitlesCoveringPackage,
+  getSelectedMutuallyExclusiveOption,
   getSelectedPackageTitlesCoveringOption,
 } from "@/features/configurator/lib/configurator-compatibility";
 import type {
@@ -388,7 +389,16 @@ export function OptionsSection({
                       allScopedOptions,
                     );
                     const isSelected = selectedOptionIds.includes(option.id);
-                    const isDisabled = availabilityState !== "available" || isLocked;
+                    const mutuallyExclusiveSelectedOption =
+                      getSelectedMutuallyExclusiveOption(
+                        option,
+                        selectedOptionIds,
+                        allScopedOptions,
+                      );
+                    const isDisabled =
+                      (availabilityState !== "available" &&
+                        availabilityState !== "exclusive_with_selected") ||
+                      isLocked;
                     const coveringPackageTitles = getSelectedPackageTitlesCoveringOption(
                       option.id,
                       selectedOptionIds,
@@ -415,6 +425,10 @@ export function OptionsSection({
                                   ? `: ${coveringHigherTierPackageTitles.join(", ")}.`
                                   : "."
                               }`
+                          : availabilityState === "exclusive_with_selected"
+                            ? mutuallyExclusiveSelectedOption
+                              ? `${mutuallyExclusiveSelectedOption.title} is already selected. Choosing this will replace it.`
+                              : "This option cannot be combined with another selected styling option."
                           : option.appliesToAllModels
                             ? "Available across all Go-Pod models."
                             : `Compatible with ${option.compatibleModelSlugs.join(", ")}.`;
@@ -518,6 +532,14 @@ export function OptionsSection({
                                 Not compatible with your selected Go-Pod.
                               </p>
                             ) : null}
+
+                            {availabilityState === "exclusive_with_selected" ? (
+                              <p className="text-xs leading-5 text-[var(--color-muted-foreground)]">
+                                {mutuallyExclusiveSelectedOption
+                                  ? `${mutuallyExclusiveSelectedOption.title} is already selected. Choose this instead to replace it.`
+                                  : "This styling option cannot be combined with another selected styling option."}
+                              </p>
+                            ) : null}
                           </div>
 
                           <div className="mt-auto">
@@ -549,6 +571,8 @@ export function OptionsSection({
                                 >
                                   {availabilityState === "included"
                                     ? "Included"
+                                    : availabilityState === "exclusive_with_selected"
+                                      ? "Choose instead"
                                     : isSelected
                                       ? "Remove"
                                       : "Add"}

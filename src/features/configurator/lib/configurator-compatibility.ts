@@ -5,6 +5,9 @@ import type {
 } from "@/types/configurator";
 
 export const PACKAGE_CATEGORY_ID = "c9ed18ab-c04b-4667-b642-e3ae914913fa";
+const MUTUALLY_EXCLUSIVE_OPTION_SLUG_GROUPS = [
+  ["custom-decals", "block-side-panels"],
+] as const;
 
 export function isPackageOption(option: ConfiguratorOption) {
   return option.categoryId === PACKAGE_CATEGORY_ID;
@@ -109,6 +112,29 @@ export function getSelectedHigherTierPackageTitlesCoveringPackage(
     .map((selectedPackage) => selectedPackage.title);
 }
 
+export function getSelectedMutuallyExclusiveOption(
+  option: ConfiguratorOption,
+  selectedOptionIds: string[],
+  options: ConfiguratorOption[],
+) {
+  const mutuallyExclusiveSlugGroup = MUTUALLY_EXCLUSIVE_OPTION_SLUG_GROUPS.find((group) =>
+    group.includes(option.slug as (typeof group)[number]),
+  );
+
+  if (!mutuallyExclusiveSlugGroup) {
+    return null;
+  }
+
+  return options
+    .filter((candidate) => candidate.id !== option.id)
+    .find(
+      (candidate) =>
+        mutuallyExclusiveSlugGroup.includes(
+          candidate.slug as (typeof mutuallyExclusiveSlugGroup)[number],
+        ) && selectedOptionIds.includes(candidate.id),
+    ) ?? null;
+}
+
 export function getOptionAvailabilityState(
   option: ConfiguratorOption,
   model: ConfiguratorModel | null,
@@ -144,6 +170,10 @@ export function getOptionAvailabilityState(
 
   if (coveringPackageTitles.length > 0 && !selectedOptionIds.includes(option.id)) {
     return "included_in_package" as const;
+  }
+
+  if (getSelectedMutuallyExclusiveOption(option, selectedOptionIds, options)) {
+    return "exclusive_with_selected" as const;
   }
 
   if (isOptionCompatibleWithModel(option, model.slug)) {
@@ -197,7 +227,9 @@ export function getSelectedOptionIdsWithoutPackageDuplicates(
   }
 
   const nextSelectedOptionIds = selectedOptionIds.filter(
-    (selectedOptionId) => !nextOption.includedOptionIds.includes(selectedOptionId),
+    (selectedOptionId) =>
+      !nextOption.includedOptionIds.includes(selectedOptionId) &&
+      getSelectedMutuallyExclusiveOption(nextOption, [selectedOptionId], options) === null,
   );
 
   return [...nextSelectedOptionIds, nextOptionId];
