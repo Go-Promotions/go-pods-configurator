@@ -1,0 +1,34 @@
+insert into public.option_package_inclusions (
+  package_option_id,
+  included_option_id
+)
+values
+  ('2455220c-ec2b-4d59-8a62-6b88f895a431', 'c8a97338-a566-4390-b2cf-9a89de9651fe'),
+  ('2455220c-ec2b-4d59-8a62-6b88f895a431', '171d0398-ebc8-4b2b-bf5c-4dfe1cad6183'),
+
+  ('b8f8245f-d5dc-459a-8a88-9055f72572b4', 'c8a97338-a566-4390-b2cf-9a89de9651fe'),
+  ('b8f8245f-d5dc-459a-8a88-9055f72572b4', '171d0398-ebc8-4b2b-bf5c-4dfe1cad6183'),
+  ('b8f8245f-d5dc-459a-8a88-9055f72572b4', '315b53bb-2580-4dad-9483-71eb888af7fa'),
+  ('b8f8245f-d5dc-459a-8a88-9055f72572b4', 'e755300b-6721-43a9-beee-2f4ad9f80ad2'),
+
+  ('7f252040-d435-4a30-9ea2-c4ada913a056', 'c8a97338-a566-4390-b2cf-9a89de9651fe'),
+  ('7f252040-d435-4a30-9ea2-c4ada913a056', '171d0398-ebc8-4b2b-bf5c-4dfe1cad6183'),
+  ('7f252040-d435-4a30-9ea2-c4ada913a056', '315b53bb-2580-4dad-9483-71eb888af7fa'),
+  ('7f252040-d435-4a30-9ea2-c4ada913a056', 'e755300b-6721-43a9-beee-2f4ad9f80ad2'),
+  ('7f252040-d435-4a30-9ea2-c4ada913a056', '1262cbee-15fd-428f-a8f7-f829fb4672d8'),
+  ('7f252040-d435-4a30-9ea2-c4ada913a056', '079151b3-13c0-4936-8cfc-f9415cd47418'),
+  ('7f252040-d435-4a30-9ea2-c4ada913a056', '601d9a65-d227-43ad-be78-11d72e3fa664'),
+  ('7f252040-d435-4a30-9ea2-c4ada913a056', '65e62009-f988-415c-bc0d-bbb0154bb90b'),
+
+  ('e1b50b57-31a4-496a-b72b-2875f93feedc', 'c8a97338-a566-4390-b2cf-9a89de9651fe'),
+  ('e1b50b57-31a4-496a-b72b-2875f93feedc', '171d0398-ebc8-4b2b-bf5c-4dfe1cad6183'),
+  ('e1b50b57-31a4-496a-b72b-2875f93feedc', '315b53bb-2580-4dad-9483-71eb888af7fa'),
+  ('e1b50b57-31a4-496a-b72b-2875f93feedc', 'e755300b-6721-43a9-beee-2f4ad9f80ad2'),
+  ('e1b50b57-31a4-496a-b72b-2875f93feedc', '1262cbee-15fd-428f-a8f7-f829fb4672d8'),
+  ('e1b50b57-31a4-496a-b72b-2875f93feedc', '079151b3-13c0-4936-8cfc-f9415cd47418'),
+  ('e1b50b57-31a4-496a-b72b-2875f93feedc', '601d9a65-d227-43ad-be78-11d72e3fa664'),
+  ('e1b50b57-31a4-496a-b72b-2875f93feedc', '65e62009-f988-415c-bc0d-bbb0154bb90b'),
+  ('e1b50b57-31a4-496a-b72b-2875f93feedc', '75ffd491-3aac-4141-93e7-8d5ccea32840'),
+  ('e1b50b57-31a4-496a-b72b-2875f93feedc', '5240c24c-fa4d-4f5e-9970-3692b890031d'),
+  ('e1b50b57-31a4-496a-b72b-2875f93feedc', '9f6a62e4-2483-4956-ac99-251de22bde0a')
+on conflict (package_option_id, included_option_id) do nothing;
