@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState, type MouseEvent } from "react";
+import { useId, useMemo, useState, type MouseEvent, type ReactNode } from "react";
 
 import { formatPrice, formatWeightKg } from "@/features/configurator/lib/formatters";
 import { DEFAULT_MTPLM_KG } from "@/features/configurator/lib/vehicle-constants";
@@ -8,6 +8,10 @@ import type { ConfiguratorModel } from "@/types/configurator";
 
 interface ModelSpecDialogProps {
   model: ConfiguratorModel;
+  triggerLabel?: string;
+  triggerClassName?: string;
+  triggerContent?: ReactNode;
+  triggerAriaLabel?: string;
 }
 
 interface ModelGalleryImage {
@@ -146,7 +150,13 @@ function SpecFeatureIcon({
   );
 }
 
-export function ModelSpecDialog({ model }: ModelSpecDialogProps) {
+export function ModelSpecDialog({
+  model,
+  triggerLabel = "View standard specification",
+  triggerClassName = "inline-flex items-center rounded-full border border-[var(--color-border-strong)] px-4 py-2 text-sm font-medium text-[var(--color-foreground)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]",
+  triggerContent,
+  triggerAriaLabel,
+}: ModelSpecDialogProps) {
   const dialogId = useId();
   const [isOpen, setIsOpen] = useState(false);
   const galleryImages = useMemo(() => buildModelGalleryImages(model), [model]);
@@ -181,11 +191,12 @@ export function ModelSpecDialog({ model }: ModelSpecDialogProps) {
       <button
         type="button"
         onClick={handleOpen}
-        className="inline-flex items-center rounded-full border border-[var(--color-border-strong)] px-4 py-2 text-sm font-medium text-[var(--color-foreground)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+        className={triggerClassName}
         aria-haspopup="dialog"
         aria-controls={dialogId}
+        aria-label={triggerAriaLabel}
       >
-        View standard specification
+        {triggerContent ?? triggerLabel}
       </button>
 
       {isOpen ? (

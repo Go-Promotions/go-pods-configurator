@@ -10,6 +10,7 @@ import {
 } from "@/features/configurator/lib/configurator-steps";
 import type {
   ConfiguratorDraftState,
+  ConfiguratorInitialSelections,
   ConfiguratorOption,
   ConfiguratorStep,
   CustomerDetailsDraft,
@@ -25,11 +26,13 @@ export const initialCustomerDetailsDraft: CustomerDetailsDraft = {
   enquiryType: "general_enquiry",
 };
 
-export function createInitialConfiguratorDraftState(): ConfiguratorDraftState {
+export function createInitialConfiguratorDraftState(
+  initialSelections?: ConfiguratorInitialSelections,
+): ConfiguratorDraftState {
   return {
-    currentStep: firstConfiguratorStep,
-    selectedModelSlug: null,
-    selectedOptionIds: [],
+    currentStep: initialSelections?.currentStep ?? firstConfiguratorStep,
+    selectedModelSlug: initialSelections?.selectedModelSlug ?? null,
+    selectedOptionIds: initialSelections?.selectedOptionIds ?? [],
     customerDetails: initialCustomerDetailsDraft,
   };
 }

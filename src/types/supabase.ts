@@ -109,6 +109,49 @@ export interface Database {
           utm_term: string | null;
         };
       };
+      quiz_answer_model_scores: {
+        Row: {
+          answer_id: string;
+          created_at: string;
+          id: string;
+          model_id: string;
+          score: number;
+          updated_at: string;
+        };
+      };
+      quiz_answer_option_suggestions: {
+        Row: {
+          answer_id: string;
+          created_at: string;
+          id: string;
+          note: string | null;
+          option_id: string;
+          priority: number;
+          updated_at: string;
+        };
+      };
+      quiz_answers: {
+        Row: {
+          answer_text: string;
+          created_at: string;
+          id: string;
+          question_id: string;
+          slug: string;
+          sort_order: number;
+          updated_at: string;
+        };
+      };
+      quiz_questions: {
+        Row: {
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          question_text: string;
+          slug: string;
+          sort_order: number;
+          updated_at: string;
+        };
+      };
       model_specs: {
         Row: {
           created_at: string;

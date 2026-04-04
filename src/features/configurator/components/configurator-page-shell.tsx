@@ -1,12 +1,19 @@
-import type { ConfiguratorCatalogue } from "@/types/configurator";
+import type {
+  ConfiguratorCatalogue,
+  ConfiguratorInitialSelections,
+} from "@/types/configurator";
 
 import { ConfiguratorFlow } from "./configurator-flow";
 
 interface ConfiguratorPageShellProps {
   catalogue: ConfiguratorCatalogue;
+  initialSelections?: ConfiguratorInitialSelections | null;
 }
 
-export function ConfiguratorPageShell({ catalogue }: ConfiguratorPageShellProps) {
+export function ConfiguratorPageShell({
+  catalogue,
+  initialSelections = null,
+}: ConfiguratorPageShellProps) {
   return (
     <main className="min-h-screen px-4 py-5 sm:px-6 sm:py-6 lg:px-10">
       <div className="mx-auto max-w-7xl">
@@ -57,7 +64,7 @@ export function ConfiguratorPageShell({ catalogue }: ConfiguratorPageShellProps)
           </div>
         </div>
 
-        <ConfiguratorFlow catalogue={catalogue} />
+        <ConfiguratorFlow catalogue={catalogue} initialSelections={initialSelections} />
       </div>
     </main>
   );

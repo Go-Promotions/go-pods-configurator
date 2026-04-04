@@ -21,6 +21,7 @@ import { configuratorSteps } from "@/features/configurator/lib/configurator-step
 import { validateConfiguratorSubmission } from "@/features/enquiry/lib/validate-configurator-submission";
 import type {
   ConfiguratorCatalogue,
+  ConfiguratorInitialSelections,
   ConfiguratorSubmissionResult,
   ConfiguratorValidationErrors,
 } from "@/types/configurator";
@@ -32,17 +33,21 @@ import { SummarySidebar } from "./summary-sidebar";
 
 interface ConfiguratorFlowProps {
   catalogue: ConfiguratorCatalogue;
+  initialSelections?: ConfiguratorInitialSelections | null;
 }
 
 const STEP_NAVIGATION_LIST_CLASS = "grid gap-3 text-sm md:grid-cols-5";
 const STEP_NAVIGATION_ITEM_CLASS =
   "w-full rounded-2xl border px-3 py-3 text-left transition md:min-h-[92px]";
 
-export function ConfiguratorFlow({ catalogue }: ConfiguratorFlowProps) {
+export function ConfiguratorFlow({
+  catalogue,
+  initialSelections = null,
+}: ConfiguratorFlowProps) {
   const allOptions = flattenCatalogueOptions(catalogue.optionCategories);
   const [state, dispatch] = useReducer(
     configuratorReducer,
-    undefined,
+    initialSelections ?? undefined,
     createInitialConfiguratorDraftState,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -32,8 +32,8 @@ export default function HomePage() {
                   href="/help-me-choose"
                   eyebrow="Guided path"
                   title="Help me choose"
-                  description="Answer a few quick questions and get guided towards the right Go-Pod setup. This path is coming soon."
-                  cta="Explore guided option"
+                  description="Answer five quick questions and get a suggested model, upgrade shortlist, and package overlap nudge."
+                  cta="Start guided recommendation"
                 />
               </div>
             </div>

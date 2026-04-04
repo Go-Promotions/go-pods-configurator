@@ -120,6 +120,12 @@ export interface ConfiguratorDraftState {
   customerDetails: CustomerDetailsDraft;
 }
 
+export interface ConfiguratorInitialSelections {
+  currentStep?: ConfiguratorStep;
+  selectedModelSlug?: string | null;
+  selectedOptionIds?: string[];
+}
+
 export interface ConfiguratorSubmissionPayload {
   selectedModelSlug: string | null;
   selectedOptionIds: string[];
