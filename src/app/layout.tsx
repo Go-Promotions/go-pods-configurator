@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   title: "Go-Pods Configurator",
   description:
     "Foundational MVP scaffold for the Go-Pods customer configurator flow.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
