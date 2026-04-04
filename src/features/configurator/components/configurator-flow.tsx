@@ -11,6 +11,7 @@ import {
   flattenCatalogueOptions,
   findSelectedModel,
 } from "@/features/configurator/lib/configurator-compatibility";
+import { getUpsellSuggestions } from "@/features/configurator/lib/upsell-suggestions";
 import {
   canMoveToNextStep,
   configuratorReducer,
@@ -30,6 +31,7 @@ import { ConfiguratorStepSection } from "./configurator-step-section";
 import { ModelSelectionSection } from "./model-selection-section";
 import { OptionsSection } from "./options-section";
 import { SummarySidebar } from "./summary-sidebar";
+import { UpsellSuggestionsSection } from "./upsell-suggestions-section";
 
 interface ConfiguratorFlowProps {
   catalogue: ConfiguratorCatalogue;
@@ -63,6 +65,11 @@ export function ConfiguratorFlow({
   const summary = buildConfiguratorSummary({
     model: selectedModel,
     selectedOptions,
+  });
+  const upsellSuggestions = getUpsellSuggestions({
+    options: allOptions,
+    selectedModel,
+    selectedOptionIds: state.selectedOptionIds,
   });
   const canGoNext = canMoveToNextStep(state);
   const activeIndex = configuratorSteps.findIndex(
@@ -243,18 +250,30 @@ export function ConfiguratorFlow({
             description="Add a custom design, splash of colour or smart alloy wheels to your Go-Pod."
             footer={stepFooterNavigationControls}
           >
-            <OptionsSection
-              categories={catalogue.optionCategories}
-              scope="styling"
-              emptyStateTitle="Styling categories will appear here once catalogue data is available."
-              selectedModel={selectedModel}
-              selectedModelSlug={state.selectedModelSlug}
-              selectedOptionIds={state.selectedOptionIds}
-              isLocked={isSubmitting}
-              onToggleOption={(optionId) =>
-                dispatch({ type: "toggle-option", optionId, options: allOptions })
-              }
-            />
+            <div className="space-y-6">
+              <OptionsSection
+                categories={catalogue.optionCategories}
+                scope="styling"
+                emptyStateTitle="Styling categories will appear here once catalogue data is available."
+                selectedModel={selectedModel}
+                selectedModelSlug={state.selectedModelSlug}
+                selectedOptionIds={state.selectedOptionIds}
+                isLocked={isSubmitting}
+                onToggleOption={(optionId) =>
+                  dispatch({ type: "toggle-option", optionId, options: allOptions })
+                }
+              />
+              <UpsellSuggestionsSection
+                options={upsellSuggestions}
+                allOptions={allOptions}
+                selectedModel={selectedModel}
+                selectedOptionIds={state.selectedOptionIds}
+                isLocked={isSubmitting}
+                onToggleOption={(optionId) =>
+                  dispatch({ type: "toggle-option", optionId, options: allOptions })
+                }
+              />
+            </div>
           </ConfiguratorStepSection>
         ) : null}
 

@@ -5,9 +5,11 @@ import { useMemo, useState } from "react";
 
 import { ModelSpecDialog } from "@/features/configurator/components/model-spec-dialog";
 import { OptionDetailsDialog } from "@/features/configurator/components/option-details-dialog";
+import { UpsellSuggestionsSection } from "@/features/configurator/components/upsell-suggestions-section";
 import { applySuggestedPackageSelection } from "@/features/configurator/lib/package-suggestions";
 import { buildConfiguratorSummary } from "@/features/configurator/lib/build-configurator-summary";
 import { formatPrice, formatWeightKg } from "@/features/configurator/lib/formatters";
+import { getUpsellSuggestions } from "@/features/configurator/lib/upsell-suggestions";
 import { DEFAULT_MTPLM_KG } from "@/features/configurator/lib/vehicle-constants";
 import {
   buildGuidedRecommendation,
@@ -109,6 +111,11 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
     const summary = buildConfiguratorSummary({
       model: recommendation.recommendedModel,
       selectedOptions: currentGuidedOptions,
+    });
+    const upsellSuggestions = getUpsellSuggestions({
+      options: allOptions,
+      selectedModel: recommendation.recommendedModel,
+      selectedOptionIds: currentGuidedOptionIds,
     });
 
     function getBaseSuggestedOptionIds() {
@@ -462,6 +469,16 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
             </div>
           </div>
         </div>
+
+        <UpsellSuggestionsSection
+          title="Popular additions"
+          description="You may also want to consider these extras alongside your current guided configuration."
+          options={upsellSuggestions}
+          allOptions={allOptions}
+          selectedModel={recommendation.recommendedModel}
+          selectedOptionIds={currentGuidedOptionIds}
+          onToggleOption={handleToggleGuidedOption}
+        />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
