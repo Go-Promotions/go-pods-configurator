@@ -5,6 +5,7 @@ import type {
 } from "@/types/configurator";
 
 export const PACKAGE_CATEGORY_ID = "c9ed18ab-c04b-4667-b642-e3ae914913fa";
+const PIONEER_INCLUDED_OPTION_SLUGS = ["110ah-battery", "3-year-warranty"] as const;
 const MUTUALLY_EXCLUSIVE_OPTION_SLUG_GROUPS = [
   ["custom-decals", "block-side-panels"],
 ] as const;
@@ -36,7 +37,33 @@ export function isOptionIncludedWithModel(
     return false;
   }
 
+  if (
+    model.slug === "pioneer" &&
+    PIONEER_INCLUDED_OPTION_SLUGS.includes(
+      option.slug as (typeof PIONEER_INCLUDED_OPTION_SLUGS)[number],
+    )
+  ) {
+    return true;
+  }
+
   return option.includedModelSlugs.includes(model.slug);
+}
+
+export function getOptionIncludedWithModelMessage(
+  option: ConfiguratorOption,
+  model: ConfiguratorModel | null,
+) {
+  if (model?.slug === "pioneer") {
+    if (
+      PIONEER_INCLUDED_OPTION_SLUGS.includes(
+        option.slug as (typeof PIONEER_INCLUDED_OPTION_SLUGS)[number],
+      )
+    ) {
+      return "Already included with the Pioneer model.";
+    }
+  }
+
+  return "Already included with the Go-Pod model you have selected.";
 }
 
 export function getOptionsById(options: ConfiguratorOption[]) {

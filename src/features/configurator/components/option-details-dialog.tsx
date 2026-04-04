@@ -3,6 +3,7 @@
 import { useId, useMemo, useRef, useState, type MouseEvent, type ReactNode, type UIEvent } from "react";
 
 import {
+  getOptionIncludedWithModelMessage,
   getOptionAvailabilityState,
   getSelectedHigherTierPackageTitlesCoveringPackage,
   getSelectedMutuallyExclusiveOption,
@@ -185,12 +186,17 @@ export function OptionDetailsDialog({
     activeOption.id === option.id
       ? compatibilityLabel
       : "Included within the selected package and available in the current catalogue.";
+  const includedWithModelMessage = getOptionIncludedWithModelMessage(
+    activeOption,
+    selectedModel,
+  );
   const selectionActionCopy = getSelectionActionCopy({
     activeAvailabilityState,
     isSelected,
     isSelectionLocked,
     coveringPackageTitles,
     coveringHigherTierPackageTitles,
+    includedWithModelMessage,
     mutuallyExclusiveSelectedOptionTitle: mutuallyExclusiveSelectedOption?.title ?? null,
   });
 
@@ -544,6 +550,7 @@ interface SelectionActionCopyParams {
   isSelectionLocked: boolean;
   coveringPackageTitles: string[];
   coveringHigherTierPackageTitles: string[];
+  includedWithModelMessage: string;
   mutuallyExclusiveSelectedOptionTitle: string | null;
 }
 
@@ -553,6 +560,7 @@ function getSelectionActionCopy({
   isSelectionLocked,
   coveringPackageTitles,
   coveringHigherTierPackageTitles,
+  includedWithModelMessage,
   mutuallyExclusiveSelectedOptionTitle,
 }: SelectionActionCopyParams) {
   if (isSelectionLocked) {
@@ -591,8 +599,7 @@ function getSelectionActionCopy({
   if (activeAvailabilityState === "included") {
     return {
       heading: "Already included with your model",
-      message:
-        "This option is already included with the Go-Pod model you have selected, so you do not need to add it separately.",
+      message: `${includedWithModelMessage} You do not need to add it separately.`,
       buttonLabel: "Included with model",
       isDisabled: true,
       isPositiveState: true,

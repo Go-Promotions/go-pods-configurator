@@ -8,6 +8,7 @@ import {
   getPackageSuggestionLabel,
 } from "@/features/configurator/lib/package-suggestions";
 import {
+  getOptionIncludedWithModelMessage,
   getOptionAvailabilityState,
   getSelectedHigherTierPackageTitlesCoveringPackage,
   getSelectedMutuallyExclusiveOption,
@@ -410,9 +411,13 @@ export function OptionsSection({
                         selectedOptionIds,
                         allScopedOptions,
                       );
+                    const includedWithModelMessage = getOptionIncludedWithModelMessage(
+                      option,
+                      selectedModel,
+                    );
                     const compatibilityLabel =
                       availabilityState === "included"
-                        ? "Already included with the Go-Pod model you have selected."
+                        ? includedWithModelMessage
                         : availabilityState === "included_in_package"
                           ? `Already included in your selected package${
                               coveringPackageTitles[0]
@@ -488,7 +493,7 @@ export function OptionsSection({
                                   ✓
                                 </span>
                                 <span>
-                                  Already included with the Go-Pod model you have selected.
+                                  {includedWithModelMessage}
                                 </span>
                               </p>
                             ) : null}
