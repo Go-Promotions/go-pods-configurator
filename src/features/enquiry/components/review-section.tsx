@@ -14,8 +14,6 @@ interface ReviewSectionProps {
   customerDetails: CustomerDetailsDraft;
   validationErrors: ConfiguratorValidationErrors;
   submissionResult: ConfiguratorSubmissionResult | null;
-  isSubmitting: boolean;
-  onSubmit: () => void;
   onGoToStep: (step: ConfiguratorStep) => void;
 }
 
@@ -31,8 +29,6 @@ export function ReviewSection({
   customerDetails,
   validationErrors,
   submissionResult,
-  isSubmitting,
-  onSubmit,
   onGoToStep,
 }: ReviewSectionProps) {
   if (submissionResult?.status === "success") {
@@ -220,20 +216,9 @@ export function ReviewSection({
         Please review the above information before submitting.
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={onSubmit}
-          disabled={isSubmitting}
-          className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)] disabled:cursor-not-allowed disabled:bg-[var(--color-border-strong)]"
-        >
-          {isSubmitting ? "Submitting enquiry..." : "Submit enquiry"}
-        </button>
-        {isSubmitting ? (
-          <p className="self-center text-sm text-[var(--color-muted-foreground)]">
-            Please wait while we save your configuration.
-          </p>
-        ) : null}
+      <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-sm leading-6 text-[var(--color-muted-foreground)]">
+        Use the summary action area to submit your enquiry when everything looks
+        right.
       </div>
     </div>
   );
