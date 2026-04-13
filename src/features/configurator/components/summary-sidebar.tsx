@@ -11,10 +11,6 @@ import type {
 
 import { OptionDetailsDialog } from "./option-details-dialog";
 
-interface SummaryActionAreaActions {
-  collapseMobileSummary?: () => void;
-}
-
 interface SummarySidebarProps {
   summary: ConfiguratorSummary;
   selectedOptions: ConfiguratorOption[];
@@ -22,7 +18,6 @@ interface SummarySidebarProps {
   selectedModel: ConfiguratorModel | null;
   selectedModelName: string | null;
   onToggleOption: (optionId: string) => void;
-  renderActionArea: (actions: SummaryActionAreaActions) => React.ReactNode;
   isLocked?: boolean;
 }
 
@@ -33,7 +28,6 @@ export function SummarySidebar({
   selectedModel,
   selectedModelName,
   onToggleOption,
-  renderActionArea,
   isLocked = false,
 }: SummarySidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -43,27 +37,44 @@ export function SummarySidebar({
 
   return (
     <>
-      <aside className="hidden rounded-[1.75rem] border border-[var(--color-border)] bg-white text-[var(--color-foreground)] shadow-[var(--shadow-soft)] lg:sticky lg:top-8 lg:flex lg:max-h-[calc(100vh-4rem)] lg:flex-col lg:overflow-hidden">
-        <div className="min-h-0 overflow-y-auto p-6">
-          <SummaryPanelContent
-            summary={summary}
-            modelLabel={modelLabel}
-            selectedOptions={selectedOptions}
-            allOptions={allOptions}
-            selectedModel={selectedModel}
-            selectedModelName={selectedModelName}
-            onToggleOption={onToggleOption}
-            isLocked={isLocked}
-          />
-        </div>
-        <div className="shrink-0 border-t border-[var(--color-border)] bg-white p-5">
-          {renderActionArea({})}
-        </div>
+      <aside className="hidden rounded-[1.75rem] border border-[var(--color-border)] bg-white p-6 text-[var(--color-foreground)] shadow-[var(--shadow-soft)] lg:sticky lg:top-8 lg:block">
+        <SummaryPanelContent
+          summary={summary}
+          modelLabel={modelLabel}
+          selectedOptions={selectedOptions}
+          allOptions={allOptions}
+          selectedModel={selectedModel}
+          selectedModelName={selectedModelName}
+          onToggleOption={onToggleOption}
+          isLocked={isLocked}
+        />
       </aside>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-white/98 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-3 shadow-[0_-18px_50px_rgba(15,23,42,0.12)] backdrop-blur lg:hidden">
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen((current) => !current)}
+          className="flex w-full items-center justify-between gap-4 rounded-[1.25rem] border border-[var(--color-border)] bg-white px-4 py-3 text-left text-[var(--color-foreground)]"
+        >
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
+              Summary
+            </p>
+            <p className="mt-1 text-lg font-semibold text-[var(--color-accent)]">
+              {formatPrice(summary.runningTotal)}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-[var(--color-muted-foreground)]">Total</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border-strong)] text-xl text-[var(--color-accent)]">
+              {isOpen ? "−" : "+"}
+            </span>
+          </div>
+        </button>
+
         {isOpen ? (
-          <div className="mb-3 max-h-[calc(100dvh-15rem)] overflow-y-auto rounded-[1.5rem] border border-[var(--color-border)] bg-white p-4 text-[var(--color-foreground)] shadow-[var(--shadow-soft)]">
+          <div className="mt-3 max-h-[70vh] overflow-y-auto rounded-[1.5rem] border border-[var(--color-border)] bg-white p-4 text-[var(--color-foreground)] shadow-[var(--shadow-soft)]">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-semibold text-[var(--color-accent)]">Summary</p>
               <button
@@ -87,34 +98,6 @@ export function SummarySidebar({
             />
           </div>
         ) : null}
-
-        <div className="rounded-[1.25rem] border border-[var(--color-border)] bg-white p-3 text-[var(--color-foreground)]">
-          <button
-            type="button"
-            aria-expanded={isOpen}
-            onClick={() => setIsOpen((current) => !current)}
-            className="flex w-full items-center justify-between gap-4 text-left"
-          >
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-accent)]">
-                Summary
-              </p>
-              <p className="mt-1 text-lg font-semibold text-[var(--color-accent)]">
-                {formatPrice(summary.runningTotal)}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-[var(--color-muted-foreground)]">Total</span>
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border-strong)] text-xl text-[var(--color-accent)]">
-                {isOpen ? "−" : "+"}
-              </span>
-            </div>
-          </button>
-
-          <div className="mt-3 border-t border-[var(--color-border)] pt-3">
-            {renderActionArea({ collapseMobileSummary: () => setIsOpen(false) })}
-          </div>
-        </div>
       </div>
     </>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useEffect, useRef, useState, useReducer } from "react";
+import { startTransition, useState, useReducer } from "react";
 
 import { CustomerDetailsSection } from "@/features/enquiry/components/customer-details-section";
 import { submitConfiguratorEnquiry } from "@/features/enquiry/actions/submit-configurator-enquiry";
@@ -57,8 +57,6 @@ export function ConfiguratorFlow({
     useState<ConfiguratorValidationErrors>({});
   const [submissionResult, setSubmissionResult] =
     useState<ConfiguratorSubmissionResult | null>(null);
-  const activeStepTopRef = useRef<HTMLDivElement | null>(null);
-  const hasRenderedInitialStep = useRef(false);
 
   const selectedModel = findSelectedModel(catalogue.models, state.selectedModelSlug);
   const selectedOptions = allOptions.filter((option) =>
@@ -78,26 +76,6 @@ export function ConfiguratorFlow({
     (step) => step.id === state.currentStep,
   );
   const furthestAvailableStepIndex = getFurthestAvailableStepIndex(state);
-  const isFinalStep = activeIndex === configuratorSteps.length - 1;
-  const hasSubmittedSuccessfully = submissionResult?.status === "success";
-
-  useEffect(() => {
-    if (!hasRenderedInitialStep.current) {
-      hasRenderedInitialStep.current = true;
-      return;
-    }
-
-    window.requestAnimationFrame(() => {
-      const prefersReducedMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)",
-      ).matches;
-
-      activeStepTopRef.current?.scrollIntoView({
-        block: "start",
-        behavior: prefersReducedMotion ? "auto" : "smooth",
-      });
-    });
-  }, [state.currentStep]);
 
   function handleSetStep(step: (typeof configuratorSteps)[number]["id"]) {
     if (isSubmitting) {
@@ -150,90 +128,35 @@ export function ConfiguratorFlow({
     });
   }
 
-  function handleGoBack(onSuccessfulStepChange?: () => void) {
-    if (isSubmitting || activeIndex <= 0) {
-      return;
-    }
-
-    dispatch({ type: "go-back" });
-    onSuccessfulStepChange?.();
-  }
-
-  function handleGoNext(onSuccessfulStepChange?: () => void) {
-    if (isSubmitting || !canGoNext || isFinalStep) {
-      return;
-    }
-
-    dispatch({ type: "go-next" });
-    onSuccessfulStepChange?.();
-  }
-
-  const renderSummaryNavigationControls = ({
-    collapseMobileSummary,
-  }: {
-    collapseMobileSummary?: () => void;
-  }) => (
-    <div className="space-y-3">
-      {activeIndex === 0 && !canGoNext ? (
-        <p className="text-sm leading-5 text-[var(--color-muted-foreground)]">
-          Select a model to continue.
-        </p>
-      ) : null}
-      {state.currentStep === "details" && !canGoNext ? (
-        <p className="text-sm leading-5 text-[var(--color-muted-foreground)]">
-          Add your name, email and phone number to continue.
-        </p>
-      ) : null}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-        {activeIndex > 0 ? (
-          <button
-            type="button"
-            onClick={() => handleGoBack(collapseMobileSummary)}
-            disabled={isSubmitting}
-            className="inline-flex min-h-12 items-center justify-center rounded-full border border-[var(--color-border-strong)] px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Back
-          </button>
-        ) : null}
-        {isFinalStep ? (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting || hasSubmittedSuccessfully}
-            className="inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)] disabled:cursor-not-allowed disabled:bg-[var(--color-border-strong)] sm:col-span-1"
-          >
-            {hasSubmittedSuccessfully
-              ? "Submitted"
-              : isSubmitting
-                ? "Submitting enquiry..."
-                : "Submit enquiry"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => handleGoNext(collapseMobileSummary)}
-            disabled={!canGoNext || isSubmitting}
-            className={[
-              "inline-flex min-h-12 items-center justify-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)] disabled:cursor-not-allowed disabled:bg-[var(--color-border-strong)]",
-              activeIndex === 0 ? "sm:col-span-2 lg:col-span-1 xl:col-span-2" : "",
-            ].join(" ")}
-          >
-            Continue
-          </button>
-        )}
-      </div>
-      {isSubmitting ? (
-        <p className="text-sm leading-5 text-[var(--color-muted-foreground)]">
-          Please wait while we save your configuration.
-        </p>
-      ) : null}
+  const stepFooterNavigationControls = (
+    <div className="flex flex-wrap gap-3">
+      <button
+        type="button"
+        onClick={() => dispatch({ type: "go-back" })}
+        disabled={activeIndex === 0 || isSubmitting}
+        className="inline-flex items-center rounded-full border border-[var(--color-border-strong)] px-5 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Back
+      </button>
+      <button
+        type="button"
+        onClick={() => dispatch({ type: "go-next" })}
+        disabled={
+          !canGoNext ||
+          activeIndex === configuratorSteps.length - 1 ||
+          isSubmitting
+        }
+        className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)] disabled:cursor-not-allowed disabled:bg-[var(--color-border-strong)]"
+      >
+        Continue
+      </button>
     </div>
   );
 
   return (
-    <div className="grid gap-5 pb-72 md:pb-64 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:pb-0">
+    <div className="grid gap-5 pb-28 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:pb-0">
       <div className="space-y-5">
-        <nav className="hidden flex-col gap-4 rounded-[1.5rem] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-soft)] sm:p-5 md:flex">
+        <nav className="flex flex-col gap-4 rounded-[1.5rem] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-soft)] sm:p-5">
           <ol className={STEP_NAVIGATION_LIST_CLASS}>
             {configuratorSteps.map((step, index) => {
               const isActive = step.id === state.currentStep;
@@ -267,13 +190,12 @@ export function ConfiguratorFlow({
 
         </nav>
 
-        <div ref={activeStepTopRef} className="scroll-mt-5" />
-
         {state.currentStep === "model" ? (
           <ConfiguratorStepSection
             stepNumber={1}
             title="Choose your Go-Pod model"
-            description="Select your Go-Pod model below, then use the summary action area to continue."
+            description="Select your Go-Pod model below, then click Continue to move to the next step."
+            footer={stepFooterNavigationControls}
           >
             <ModelSelectionSection
               models={catalogue.models}
@@ -296,6 +218,7 @@ export function ConfiguratorFlow({
             stepNumber={2}
             title="Accessories & upgrades"
             description="Select the accessories and upgrades you’d like to add to your Go-Pod."
+            footer={stepFooterNavigationControls}
           >
             <OptionsSection
               categories={catalogue.optionCategories}
@@ -325,6 +248,7 @@ export function ConfiguratorFlow({
             stepNumber={3}
             title="Styling upgrades"
             description="Add a custom design, splash of colour or smart alloy wheels to your Go-Pod."
+            footer={stepFooterNavigationControls}
           >
             <div className="space-y-6">
               <OptionsSection
@@ -358,6 +282,7 @@ export function ConfiguratorFlow({
             stepNumber={4}
             title="Your details"
             description="Enter your details below to save your configuration, download a PDF copy and receive another copy via email for your records. You can also request a formal quotation from our sales team, or if you’re happy with everything, you can proceed straight to ordering!"
+            footer={stepFooterNavigationControls}
           >
             <CustomerDetailsSection
               customerDetails={state.customerDetails}
@@ -384,6 +309,7 @@ export function ConfiguratorFlow({
             stepNumber={5}
             title="Review & submit"
             description="Review your selected configuration to make sure you’re happy before finalising"
+            footer={null}
           >
             <ReviewSection
               selectedModel={selectedModel}
@@ -391,6 +317,8 @@ export function ConfiguratorFlow({
               customerDetails={state.customerDetails}
               validationErrors={validationErrors}
               submissionResult={submissionResult}
+              isSubmitting={isSubmitting}
+              onSubmit={handleSubmit}
               onGoToStep={handleSetStep}
             />
           </ConfiguratorStepSection>
@@ -403,7 +331,6 @@ export function ConfiguratorFlow({
         allOptions={allOptions}
         selectedModel={selectedModel}
         selectedModelName={selectedModel?.name ?? null}
-        renderActionArea={renderSummaryNavigationControls}
         isLocked={isSubmitting}
         onToggleOption={(optionId) =>
           dispatch({ type: "toggle-option", optionId, options: allOptions })
