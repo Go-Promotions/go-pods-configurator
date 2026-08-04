@@ -8,6 +8,10 @@ import { OptionDetailsDialog } from "@/features/configurator/components/option-d
 import { UpsellSuggestionsSection } from "@/features/configurator/components/upsell-suggestions-section";
 import { applySuggestedPackageSelection } from "@/features/configurator/lib/package-suggestions";
 import { buildConfiguratorSummary } from "@/features/configurator/lib/build-configurator-summary";
+import {
+  flattenCatalogueOptions,
+  getOptionsById,
+} from "@/features/configurator/lib/configurator-compatibility";
 import { formatPrice, formatWeightKg } from "@/features/configurator/lib/formatters";
 import { getUpsellSuggestions } from "@/features/configurator/lib/upsell-suggestions";
 import { DEFAULT_MTPLM_KG } from "@/features/configurator/lib/vehicle-constants";
@@ -38,9 +42,10 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
 
   const currentQuestion = quiz.questions[currentQuestionIndex] ?? null;
   const allOptions = useMemo(
-    () => catalogue.optionCategories.flatMap((category) => category.options),
+    () => flattenCatalogueOptions(catalogue.optionCategories),
     [catalogue.optionCategories],
   );
+  const allOptionsById = useMemo(() => getOptionsById(allOptions), [allOptions]);
   const isComplete =
     quiz.questions.length > 0 &&
     quiz.questions.every((question) => selectedAnswerSlugs[question.slug]);
@@ -61,6 +66,12 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
         : null,
     [recommendation],
   );
+
+  function restartQuiz() {
+    setCurrentQuestionIndex(0);
+    setSelectedAnswerSlugs({});
+    setGuidedSelectionState({ recommendationKey: null, optionIds: [] });
+  }
 
   if (currentQuestion === null) {
     return (
@@ -84,6 +95,38 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
     );
   }
 
+  if (isComplete && recommendation === null) {
+    return (
+      <section className="rounded-[2rem] border border-[var(--color-border)] bg-white p-6 shadow-[var(--shadow-soft)] sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-danger)]">
+          Guided recommendation unavailable
+        </p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight">
+          We couldn’t prepare a Classic configuration.
+        </h1>
+        <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--color-muted-foreground)]">
+          Classic is not available in the current catalogue. Start again or continue
+          to the manual configurator to review the available models.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={restartQuiz}
+            className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white"
+          >
+            Start again
+          </button>
+          <Link
+            href="/configurator"
+            className="inline-flex items-center rounded-full border border-[var(--color-border-strong)] px-5 py-3 text-sm font-semibold text-[var(--color-foreground)]"
+          >
+            Configure manually
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
   if (isComplete && recommendation) {
     const suggestedOptionIdsFromRecommendation = recommendation.suggestedOptions.map(
       (option) => option.id,
@@ -93,11 +136,12 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
         ? guidedSelectionState.optionIds
         : suggestedOptionIdsFromRecommendation;
     const currentGuidedOptions = currentGuidedOptionIds
-      .map((optionId) => allOptions.find((option) => option.id === optionId))
+      .map((optionId) => allOptionsById.get(optionId))
       .filter((option): option is (typeof allOptions)[number] => option !== undefined);
     const packageOverlapNotice = getGuidedPackageOverlapNotice(
       currentGuidedOptions,
       allOptions,
+      recommendation.recommendedModel,
     );
     const groupedSuggestedCategories = catalogue.optionCategories
       .map((category) => ({
@@ -163,12 +207,13 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
           Guided recommendation
         </p>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          Here’s a Go-Pod setup worth starting with.
+          Here’s your tailored Classic setup.
         </h1>
-        <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--color-muted-foreground)]">
-          Based on your answers, we’ve suggested a model and a shortlist of upgrades
-          that should suit how you plan to travel.
-        </p>
+        <div className="mt-4 max-w-3xl space-y-2 text-base leading-7 text-[var(--color-muted-foreground)]">
+          {recommendation.explanation.map((explanation) => (
+            <p key={explanation}>{explanation}</p>
+          ))}
+        </div>
 
         <div className="mt-8 rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6">
           <div>
@@ -379,9 +424,9 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
                 </div>
               ) : (
                 <p className="mt-4 text-sm leading-6 text-[var(--color-muted-foreground)]">
-                  You have removed the suggested accessories from this shortlist, so
-                  you can continue into the configurator with the recommended model
-                  and explore the rest manually.
+                  {suggestedOptionIdsFromRecommendation.length === 0
+                    ? "No optional accessories matched this answer set, but your Classic recommendation is ready. You can continue and explore the catalogue manually."
+                    : "You have removed the suggested accessories from this shortlist, so you can continue into the configurator with Classic and explore the rest manually."}
                 </p>
               )}
             </div>
@@ -489,14 +534,7 @@ export function GuidedQuizFlow({ catalogue, quiz }: GuidedQuizFlowProps) {
           </Link>
           <button
             type="button"
-            onClick={() => {
-              setCurrentQuestionIndex(0);
-              setSelectedAnswerSlugs({});
-              setGuidedSelectionState({
-                recommendationKey: null,
-                optionIds: [],
-              });
-            }}
+            onClick={restartQuiz}
             className="inline-flex items-center rounded-full border border-[var(--color-border-strong)] px-5 py-3 text-sm font-semibold text-[var(--color-foreground)]"
           >
             Start again

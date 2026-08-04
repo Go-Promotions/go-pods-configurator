@@ -37,6 +37,7 @@ export function getUpsellSuggestions({
     options.find((option) => option.slug === slug),
   )
     .filter((option): option is ConfiguratorOption => option !== undefined)
+    .filter((option) => option.isActive)
     .filter((option) => !isPackageOption(option))
     .filter((option) => !selectedOptionIdsSet.has(option.id))
     .filter(

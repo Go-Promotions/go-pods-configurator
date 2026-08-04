@@ -1,7 +1,16 @@
-import { PACKAGE_CATEGORY_ID } from "@/features/configurator/lib/configurator-compatibility";
+import {
+  findSelectedModel,
+  flattenCatalogueOptions,
+  getSelectedOptionIdsWithoutPackageDuplicates,
+  isOptionCompatibleWithModel,
+  isOptionIncludedWithModel,
+  PACKAGE_CATEGORY_ID,
+} from "@/features/configurator/lib/configurator-compatibility";
 import { isModelRecommendationEligible } from "@/features/configurator/lib/model-availability";
 import type { ConfiguratorCatalogue, ConfiguratorModel, ConfiguratorOption } from "@/types/configurator";
 import type { GuidedQuizDefinition } from "@/types/guided-quiz";
+
+export const GUIDED_CONFIGURATION_MODEL_SLUG = "classic";
 
 const GUIDED_PACKAGE_OVERLAP_RULES = {
   "bronze-package": { tier: 1, minimumCoveredCount: 2 },
@@ -23,7 +32,7 @@ export interface GuidedPackageOverlapNotice {
 export interface GuidedRecommendation {
   recommendedModel: ConfiguratorModel;
   suggestedOptions: ConfiguratorOption[];
-  packageOverlapNotice: GuidedPackageOverlapNotice | null;
+  explanation: string[];
 }
 
 type GuidedEligiblePackageOverlapNotice = GuidedPackageOverlapNotice & {
@@ -45,7 +54,7 @@ export function buildGuidedRecommendation(
     return null;
   }
 
-  const recommendedModel = getRecommendedModel(catalogue.models, selectedAnswers);
+  const recommendedModel = getGuidedConfigurationModel(catalogue.models);
 
   if (!recommendedModel) {
     return null;
@@ -60,9 +69,10 @@ export function buildGuidedRecommendation(
   return {
     recommendedModel,
     suggestedOptions,
-    packageOverlapNotice: getGuidedPackageOverlapNotice(
+    explanation: buildRecommendationExplanation(
+      quiz,
+      selectedAnswerSlugs,
       suggestedOptions,
-      catalogue.optionCategories.flatMap((category) => category.options),
     ),
   };
 }
@@ -70,35 +80,21 @@ export function buildGuidedRecommendation(
 export function getGuidedPackageOverlapNotice(
   suggestedOptions: ConfiguratorOption[],
   allOptions: ConfiguratorOption[],
+  recommendedModel: ConfiguratorModel,
 ) {
-  return getBestGuidedPackageOverlapNotice(suggestedOptions, allOptions);
+  return getBestGuidedPackageOverlapNotice(
+    suggestedOptions,
+    allOptions,
+    recommendedModel,
+  );
 }
 
-function getRecommendedModel(
-  models: ConfiguratorModel[],
-  selectedAnswers: GuidedQuizDefinition["questions"][number]["answers"],
-) {
-  const scoreByModelSlug = new Map<string, number>();
+function getGuidedConfigurationModel(models: ConfiguratorModel[]) {
+  const classicModel = findSelectedModel(models, GUIDED_CONFIGURATION_MODEL_SLUG);
 
-  for (const answer of selectedAnswers) {
-    for (const modelScore of answer.modelScores) {
-      scoreByModelSlug.set(
-        modelScore.modelSlug,
-        (scoreByModelSlug.get(modelScore.modelSlug) ?? 0) + modelScore.score,
-      );
-    }
-  }
-
-  return models.filter(isModelRecommendationEligible).sort((leftModel, rightModel) => {
-    const leftScore = scoreByModelSlug.get(leftModel.slug) ?? 0;
-    const rightScore = scoreByModelSlug.get(rightModel.slug) ?? 0;
-
-    if (leftScore !== rightScore) {
-      return rightScore - leftScore;
-    }
-
-    return leftModel.sortOrder - rightModel.sortOrder;
-  })[0] ?? null;
+  return classicModel && isModelRecommendationEligible(classicModel)
+    ? classicModel
+    : null;
 }
 
 function getSuggestedOptions(
@@ -106,7 +102,7 @@ function getSuggestedOptions(
   recommendedModel: ConfiguratorModel,
   selectedAnswers: GuidedQuizDefinition["questions"][number]["answers"],
 ) {
-  const allOptions = catalogue.optionCategories.flatMap((category) => category.options);
+  const allOptions = flattenCatalogueOptions(catalogue.optionCategories);
   const optionStrengthBySlug = new Map<string, number>();
 
   for (const answer of selectedAnswers) {
@@ -118,14 +114,11 @@ function getSuggestedOptions(
     }
   }
 
-  return [...allOptions]
+  const rankedOptions = allOptions
     .filter((option) => optionStrengthBySlug.has(option.slug))
-    .filter(
-      (option) =>
-        option.appliesToAllModels ||
-        option.compatibleModelSlugs.includes(recommendedModel.slug),
-    )
-    .filter((option) => !option.includedModelSlugs.includes(recommendedModel.slug))
+    .filter((option) => option.isActive)
+    .filter((option) => isOptionCompatibleWithModel(option, recommendedModel.slug))
+    .filter((option) => !isOptionIncludedWithModel(option, recommendedModel))
     .sort((leftOption, rightOption) => {
       const leftStrength = optionStrengthBySlug.get(leftOption.slug) ?? 0;
       const rightStrength = optionStrengthBySlug.get(rightOption.slug) ?? 0;
@@ -140,11 +133,64 @@ function getSuggestedOptions(
 
       return leftOption.sortOrder - rightOption.sortOrder;
     });
+
+  const seenOptionSlugs = new Set<string>();
+  const uniqueRankedOptions = rankedOptions.filter((option) => {
+    if (seenOptionSlugs.has(option.slug)) {
+      return false;
+    }
+
+    seenOptionSlugs.add(option.slug);
+    return true;
+  });
+  const selectedOptionIds = [...uniqueRankedOptions]
+    .reverse()
+    .reduce<string[]>(
+      (currentOptionIds, option) =>
+        getSelectedOptionIdsWithoutPackageDuplicates(
+          option.id,
+          currentOptionIds,
+          uniqueRankedOptions,
+        ),
+      [],
+    );
+  const selectedOptionIdSet = new Set(selectedOptionIds);
+
+  return uniqueRankedOptions.filter((option) => selectedOptionIdSet.has(option.id));
+}
+
+function buildRecommendationExplanation(
+  quiz: GuidedQuizDefinition,
+  selectedAnswerSlugs: Record<string, string>,
+  suggestedOptions: ConfiguratorOption[],
+) {
+  const tripQuestion = quiz.questions.find(
+    (question) => question.slug === "trip-style",
+  );
+  const tripStyle = tripQuestion?.answers
+    .find((answer) => answer.slug === selectedAnswerSlugs[tripQuestion.slug])
+    ?.answerText.toLowerCase() ?? "your trips";
+  const explanation = [
+    `Based on your answers, we’ve tailored this Classic configuration for ${tripStyle}.`,
+  ];
+
+  if (suggestedOptions.length === 0) {
+    explanation.push(
+      "No optional upgrades were added automatically, so you can start with Classic and explore the catalogue yourself.",
+    );
+  } else {
+    explanation.push(
+      `Your recommended Classic setup includes ${suggestedOptions.length} compatible ${suggestedOptions.length === 1 ? "upgrade" : "upgrades"} shaped by your priorities.`,
+    );
+  }
+
+  return explanation;
 }
 
 function getBestGuidedPackageOverlapNotice(
   suggestedOptions: ConfiguratorOption[],
   allOptions: ConfiguratorOption[],
+  recommendedModel: ConfiguratorModel,
 ) {
   const individuallySuggestedOptions = suggestedOptions.filter(
     (option) => option.categoryId !== PACKAGE_CATEGORY_ID,
@@ -156,6 +202,9 @@ function getBestGuidedPackageOverlapNotice(
 
   const eligiblePackageNotices = allOptions
     .filter((option) => option.categoryId === PACKAGE_CATEGORY_ID)
+    .filter((option) => option.isActive)
+    .filter((option) => isOptionCompatibleWithModel(option, recommendedModel.slug))
+    .filter((option) => !isOptionIncludedWithModel(option, recommendedModel))
     .map((packageOption) => {
       const rule =
         GUIDED_PACKAGE_OVERLAP_RULES[
