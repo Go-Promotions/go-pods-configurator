@@ -117,6 +117,9 @@ export async function getConfiguratorCatalogue(): Promise<ConfiguratorCatalogue>
       basePrice: Number(model.base_price),
       baseMiro: Number(model.base_miro),
       isActive: model.active,
+      availability: model.availability,
+      selectable: model.selectable,
+      recommendationEligible: model.recommendation_eligible,
       sortOrder: model.sort_order,
       specs: specsRows
         .filter((spec) => spec.model_id === model.id)

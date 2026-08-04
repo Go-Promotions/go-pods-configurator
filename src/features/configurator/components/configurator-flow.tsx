@@ -284,6 +284,7 @@ export function ConfiguratorFlow({
                 dispatch({
                   type: "select-model",
                   modelSlug,
+                  models: catalogue.models,
                   options: allOptions,
                 })
               }

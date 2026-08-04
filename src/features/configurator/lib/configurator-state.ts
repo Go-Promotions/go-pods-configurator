@@ -1,6 +1,9 @@
 "use client";
 
-import { filterCompatibleSelectedOptionIds } from "@/features/configurator/lib/configurator-compatibility";
+import {
+  filterCompatibleSelectedOptionIds,
+  findSelectedModel,
+} from "@/features/configurator/lib/configurator-compatibility";
 import { getSelectedOptionIdsWithoutPackageDuplicates } from "@/features/configurator/lib/configurator-compatibility";
 import { applySuggestedPackageSelection } from "@/features/configurator/lib/package-suggestions";
 import {
@@ -8,9 +11,11 @@ import {
   firstConfiguratorStep,
   lastConfiguratorStep,
 } from "@/features/configurator/lib/configurator-steps";
+import { isModelSelectable } from "@/features/configurator/lib/model-availability";
 import type {
   ConfiguratorDraftState,
   ConfiguratorInitialSelections,
+  ConfiguratorModel,
   ConfiguratorOption,
   ConfiguratorStep,
   CustomerDetailsDraft,
@@ -44,6 +49,7 @@ type ConfiguratorAction =
   | {
       type: "select-model";
       modelSlug: string;
+      models: ConfiguratorModel[];
       options: ConfiguratorOption[];
     }
   | { type: "toggle-option"; optionId: string; options: ConfiguratorOption[] }
@@ -75,7 +81,13 @@ export function configuratorReducer(
         ...state,
         currentStep: getAdjacentStep(state.currentStep, "back"),
       };
-    case "select-model":
+    case "select-model": {
+      const selectedModel = findSelectedModel(action.models, action.modelSlug);
+
+      if (!selectedModel || !isModelSelectable(selectedModel)) {
+        return state;
+      }
+
       return {
         ...state,
         selectedModelSlug: action.modelSlug,
@@ -85,6 +97,7 @@ export function configuratorReducer(
           action.modelSlug,
         ),
       };
+    }
     case "toggle-option": {
       const isSelected = state.selectedOptionIds.includes(action.optionId);
 

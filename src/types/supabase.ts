@@ -179,12 +179,19 @@ export interface Database {
       models: {
         Row: {
           active: boolean;
+          availability:
+            | "available"
+            | "low_stock"
+            | "sold_out"
+            | "discontinued";
           base_miro: number;
           base_price: number;
           created_at: string;
           id: string;
           image_path: string | null;
           name: string;
+          recommendation_eligible: boolean;
+          selectable: boolean;
           short_description: string;
           slug: string;
           sort_order: number;

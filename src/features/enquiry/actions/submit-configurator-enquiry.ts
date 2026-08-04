@@ -3,6 +3,10 @@
 import { flattenCatalogueOptions, findSelectedModel, isOptionCompatibleWithModel } from "@/features/configurator/lib/configurator-compatibility";
 import { buildConfiguratorSummary } from "@/features/configurator/lib/build-configurator-summary";
 import { getConfiguratorCatalogue } from "@/features/configurator/lib/get-configurator-catalogue";
+import {
+  getModelSubmissionAvailabilityError,
+  MODEL_UNAVAILABLE_MESSAGE,
+} from "@/features/configurator/lib/model-availability";
 import { validateConfiguratorSubmission } from "@/features/enquiry/lib/validate-configurator-submission";
 import { sendSubmissionEmails } from "@/features/enquiry/lib/send-submission-emails";
 import { hasPublicSupabaseEnv } from "@/lib/supabase/config";
@@ -50,12 +54,23 @@ export async function submitConfiguratorEnquiry(
       payload.selectedModelSlug,
     );
 
-    if (!selectedModel) {
+    const modelAvailabilityError = getModelSubmissionAvailabilityError(
+      selectedModel,
+    );
+
+    if (modelAvailabilityError) {
       return {
         status: "error",
         errors: {
-          selectedModelSlug: "The selected model could not be found.",
+          selectedModelSlug: modelAvailabilityError,
         },
+      };
+    }
+
+    if (!selectedModel) {
+      return {
+        status: "error",
+        errors: { selectedModelSlug: "The selected model could not be found." },
       };
     }
 
@@ -126,6 +141,13 @@ export async function submitConfiguratorEnquiry(
       .single();
 
     if (configurationInsert.error || !configurationInsert.data) {
+      if (configurationInsert.error?.message === MODEL_UNAVAILABLE_MESSAGE) {
+        return {
+          status: "error",
+          errors: { selectedModelSlug: MODEL_UNAVAILABLE_MESSAGE },
+        };
+      }
+
       return {
         status: "error",
         errors: {

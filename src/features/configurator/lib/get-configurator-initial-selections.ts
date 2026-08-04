@@ -1,10 +1,12 @@
 import {
   filterCompatibleSelectedOptionIds,
+  findSelectedModel,
   flattenCatalogueOptions,
   getSelectedOptionIdsWithoutPackageDuplicates,
   isOptionIncludedWithModel,
 } from "@/features/configurator/lib/configurator-compatibility";
 import { configuratorSteps } from "@/features/configurator/lib/configurator-steps";
+import { isModelSelectable } from "@/features/configurator/lib/model-availability";
 import type {
   ConfiguratorCatalogue,
   ConfiguratorInitialSelections,
@@ -25,10 +27,9 @@ export function getConfiguratorInitialSelections(
     return null;
   }
 
-  const selectedModel =
-    catalogue.models.find((model) => model.slug === selectedModelSlug) ?? null;
+  const selectedModel = findSelectedModel(catalogue.models, selectedModelSlug);
 
-  if (selectedModel === null) {
+  if (selectedModel === null || !isModelSelectable(selectedModel)) {
     return null;
   }
 

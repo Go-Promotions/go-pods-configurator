@@ -1,4 +1,5 @@
 import { PACKAGE_CATEGORY_ID } from "@/features/configurator/lib/configurator-compatibility";
+import { isModelRecommendationEligible } from "@/features/configurator/lib/model-availability";
 import type { ConfiguratorCatalogue, ConfiguratorModel, ConfiguratorOption } from "@/types/configurator";
 import type { GuidedQuizDefinition } from "@/types/guided-quiz";
 
@@ -88,20 +89,12 @@ function getRecommendedModel(
     }
   }
 
-  return [...models].sort((leftModel, rightModel) => {
+  return models.filter(isModelRecommendationEligible).sort((leftModel, rightModel) => {
     const leftScore = scoreByModelSlug.get(leftModel.slug) ?? 0;
     const rightScore = scoreByModelSlug.get(rightModel.slug) ?? 0;
 
     if (leftScore !== rightScore) {
       return rightScore - leftScore;
-    }
-
-    if (leftModel.slug === "classic") {
-      return -1;
-    }
-
-    if (rightModel.slug === "classic") {
-      return 1;
     }
 
     return leftModel.sortOrder - rightModel.sortOrder;

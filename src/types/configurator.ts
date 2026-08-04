@@ -1,5 +1,11 @@
 export type CatalogueSource = "supabase" | "demo";
 
+export type ModelAvailability =
+  | "available"
+  | "low_stock"
+  | "sold_out"
+  | "discontinued";
+
 export type OptionScope = "accessory" | "styling";
 
 export type EnquiryType = "general_enquiry" | "request_quote" | "proceed_to_order";
@@ -36,6 +42,9 @@ export interface ConfiguratorModel {
   basePrice: number;
   baseMiro: number;
   isActive: boolean;
+  availability: ModelAvailability;
+  selectable: boolean;
+  recommendationEligible: boolean;
   sortOrder: number;
   specs: ModelSpecItem[];
 }

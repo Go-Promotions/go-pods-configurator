@@ -1,4 +1,5 @@
 import { createServiceRoleSupabaseClient } from "@/lib/supabase/service-role";
+import { getHistoricalModelAvailabilityNotice } from "@/features/configurator/lib/model-availability";
 import type { EnquiryType } from "@/types/configurator";
 
 export interface SubmissionPdfData {
@@ -16,6 +17,7 @@ export interface SubmissionPdfData {
   model: {
     name: string;
     slug: string;
+    availabilityNotice: string | null;
   };
   pricing: {
     basePrice: number;
@@ -63,7 +65,7 @@ export async function getSubmissionPdfData(
   const [modelResult, enquiryResult, itemsResult] = await Promise.all([
     supabase
       .from("models")
-      .select("id, name, slug")
+      .select("id, name, slug, active, availability, selectable")
       .eq("id", configuration.model_id)
       .single(),
     supabase
@@ -133,6 +135,12 @@ export async function getSubmissionPdfData(
     model: {
       name: modelResult.data.name,
       slug: modelResult.data.slug,
+      availabilityNotice: getHistoricalModelAvailabilityNotice({
+        name: modelResult.data.name,
+        isActive: modelResult.data.active,
+        availability: modelResult.data.availability,
+        selectable: modelResult.data.selectable,
+      }),
     },
     pricing: {
       basePrice: Number(configuration.base_price_snapshot),

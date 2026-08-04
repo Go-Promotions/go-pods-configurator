@@ -1,4 +1,9 @@
 import { formatPrice, formatWeightKg } from "@/features/configurator/lib/formatters";
+import {
+  getModelAvailabilityLabel,
+  isModelSelectable,
+  sortModelsByAvailability,
+} from "@/features/configurator/lib/model-availability";
 import { DEFAULT_MTPLM_KG } from "@/features/configurator/lib/vehicle-constants";
 import type { ConfiguratorModel } from "@/types/configurator";
 
@@ -60,8 +65,10 @@ export function ModelSelectionSection({
         </div>
       ) : null}
       <div className="grid gap-5 xl:grid-cols-2">
-        {models.map((model) => {
+        {sortModelsByAvailability(models).map((model) => {
           const isSelected = selectedModelSlug === model.slug;
+          const isSelectable = isModelSelectable(model);
+          const availabilityLabel = getModelAvailabilityLabel(model.availability);
 
           return (
             <article
@@ -70,7 +77,9 @@ export function ModelSelectionSection({
                 "flex h-full flex-col rounded-[1.5rem] border p-6 transition",
                 isSelected
                   ? "border-[var(--color-accent)] bg-[#f2f5ef] shadow-[var(--shadow-soft)]"
-                  : "border-[var(--color-border)] bg-[var(--color-surface)]",
+                  : isSelectable
+                    ? "border-[var(--color-border)] bg-[var(--color-surface)]"
+                    : "border-[var(--color-border)] bg-[#f7f7f5] opacity-80",
               ].join(" ")}
             >
               <div className="space-y-4">
@@ -84,6 +93,11 @@ export function ModelSelectionSection({
                   {isSelected ? (
                     <span className="rounded-full bg-[var(--color-accent)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white">
                       Selected
+                    </span>
+                  ) : null}
+                  {availabilityLabel ? (
+                    <span className="rounded-full border border-[#b58a4b] bg-[#fff7eb] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#7a5722]">
+                      {availabilityLabel}
                     </span>
                   ) : null}
                 </div>
@@ -121,10 +135,19 @@ export function ModelSelectionSection({
                 <button
                   type="button"
                   onClick={() => onSelectModel(model.slug)}
-                  disabled={isLocked}
-                  className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)]"
+                  disabled={isLocked || !isSelectable}
+                  aria-label={
+                    isSelectable
+                      ? `${isSelected ? "Selected" : "Choose"} ${model.name}`
+                      : `${model.name} is ${availabilityLabel?.toLowerCase() ?? "unavailable"}`
+                  }
+                  className="inline-flex items-center rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)] disabled:cursor-not-allowed disabled:bg-[#9a9a92]"
                 >
-                  {isSelected ? "Selected model" : "Choose this model"}
+                  {isSelectable
+                    ? isSelected
+                      ? "Selected model"
+                      : "Choose this model"
+                    : availabilityLabel ?? "Unavailable"}
                 </button>
                 <ModelSpecDialog model={model} />
               </div>

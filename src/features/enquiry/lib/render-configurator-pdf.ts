@@ -133,6 +133,7 @@ export async function renderConfiguratorPdf(data: SubmissionPdfData) {
 
     let currentY = renderHeader(doc, data);
     currentY = renderCustomerAndSubmission(doc, data, currentY);
+    currentY = renderModelAvailabilityNotice(doc, data, currentY);
     currentY = renderConfigurationSummary(doc, data, currentY);
     currentY = renderOptions(doc, data, currentY);
     renderNotesAndNextSteps(doc, data, currentY);
@@ -312,12 +313,52 @@ function renderConfigurationSummary(
   return panelY + 168 + 22;
 }
 
+function renderModelAvailabilityNotice(
+  doc: PDFKit.PDFDocument,
+  data: SubmissionPdfData,
+  startY: number,
+) {
+  if (!data.model.availabilityNotice) {
+    return startY;
+  }
+
+  const panelHeight = 68;
+
+  doc
+    .roundedRect(PAGE_MARGIN, startY, CONTENT_WIDTH, panelHeight, 12)
+    .fillAndStroke("#FFF7EB", "#B58A4B");
+  doc
+    .fillColor("#7A5722")
+    .font(PDF_FONT_STRONG)
+    .fontSize(11)
+    .text("MODEL NO LONGER AVAILABLE", PAGE_MARGIN + 16, startY + 13, {
+      characterSpacing: 0.7,
+    });
+  doc
+    .font(PDF_FONT_REGULAR)
+    .fontSize(10)
+    .text(
+      data.model.availabilityNotice,
+      PAGE_MARGIN + 16,
+      startY + 34,
+      { width: CONTENT_WIDTH - 32, lineGap: 2 },
+    );
+
+  return startY + panelHeight + 22;
+}
+
 function renderOptions(
   doc: PDFKit.PDFDocument,
   data: SubmissionPdfData,
   startY: number,
 ) {
   let currentY = startY;
+
+  if (currentY > 670) {
+    doc.addPage();
+    currentY = 60;
+  }
+
   renderSectionTitle(doc, "Selected options", currentY);
   currentY += 28;
 

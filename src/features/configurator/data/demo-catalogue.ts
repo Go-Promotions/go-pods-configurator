@@ -21,6 +21,9 @@ export const demoCatalogue: ConfiguratorCatalogue = {
       basePrice: 18995,
       baseMiro: 615,
       isActive: true,
+      availability: "available",
+      selectable: true,
+      recommendationEligible: true,
       sortOrder: 1,
       specs: [
         {
@@ -67,6 +70,9 @@ export const demoCatalogue: ConfiguratorCatalogue = {
       basePrice: 21995,
       baseMiro: 690,
       isActive: true,
+      availability: "sold_out",
+      selectable: false,
+      recommendationEligible: false,
       sortOrder: 2,
       specs: [
         {

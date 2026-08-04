@@ -22,6 +22,9 @@ with inserted_models as (
     base_price,
     base_miro,
     active,
+    availability,
+    selectable,
+    recommendation_eligible,
     sort_order
   )
   values
@@ -33,6 +36,9 @@ with inserted_models as (
       18995,
       615,
       true,
+      'available',
+      true,
+      true,
       1
     ),
     (
@@ -43,6 +49,9 @@ with inserted_models as (
       21995,
       690,
       true,
+      'sold_out',
+      false,
+      false,
       2
     )
   returning id, slug
