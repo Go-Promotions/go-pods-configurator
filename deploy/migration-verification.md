@@ -51,3 +51,11 @@ Staging deployment, DNS/TLS, production cutover and service retirement remain pe
 Independent review completed (`20261013-211530-migration`, 12 lenses). Findings 2–8 are resolved: reload-safe retry identity, direct guided-loader coverage, full catalogue contract validation, order-independent import identities, populated historical snapshot assertions, one canonical systemd deployment guide and isolated request quotas. All final tests above pass. Fresh original and row-reordered exports both imported successfully without changing the 54/54/244 history counts or creating notifications.
 
 Finding 1 proposed blocking migration teardown on populated tables. It is not an application rollback defect: the existing deployment script restores only the code symlink and explicitly retains the schema, and the migration runbook prohibits destructive downs. No supported deployment rollback invokes `down()`. The suggestion is closed without changing Laravel’s explicit schema-teardown operation.
+
+## VPS staging proof
+
+The Linux runtime from commit `2ce9f4c` was installed under Node24 on the VPS. Artifact SHA-256: `9b5e17ee5dbd63a12c80278b432b8c6a01e641fcbd4168e79eccafa2a80b169a`. API and CRM exact-SHA CI passed before their existing deployment scripts ran. Concurrent owner-programme changes were preserved; combined API suite passed187 tests /1,990 assertions, CRM remained54 /334.
+
+All16 imported source/archive tables match, and every historical reference/price/weight reconciles. Both original and reordered imports passed. The deployed Node application returned200 for health, catalogue, guided page, historical PDF and optimized catalogue image. A browser submission through a private SSH tunnel saved a synthetic enquiry and produced a valid two-page PDF. Exactly its two unattempted email intents were suppressed; no configurator mail was sent.
+
+Public API liveness, CRM login and the existing development website return200. Staging Nginx is prepared, but public DNS for `configurator.dev.go-pods.co.uk` is still pending; HTTPS and hostname-level server-action verification remain outstanding. Production Vercel/Supabase remain live.

@@ -41,7 +41,7 @@ Record that digest with the full source SHA. Verify with `sha256sum` on the VPS 
 sudo -u gopods-configurator test -r /var/www/go-pods-configurator/current/server.js
 sudo -u gopods-configurator test ! -w /var/www/go-pods-configurator/current/server.js
 sudo -u gopods-configurator test -w /var/www/go-pods-configurator/shared/cache
-readlink -f /var/www/go-pods-configurator/current/.next/cache
+sudo -u gopods-configurator readlink -f /var/www/go-pods-configurator/current/.next/cache
 sudo systemd-analyze verify /etc/systemd/system/go-pods-configurator.service
 sudo nginx -t
 ```
