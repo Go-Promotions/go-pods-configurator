@@ -1,4 +1,4 @@
-export type CatalogueSource = "supabase" | "demo";
+export type CatalogueSource = "api" | "demo";
 
 export type ModelAvailability =
   | "available"
@@ -156,6 +156,7 @@ export interface ConfiguratorSubmissionSuccess {
   configurationId: string;
   emailDelivery:
     | { status: "sent" }
+    | { status: "queued" }
     | { status: "partial_failure"; message: string }
     | { status: "failed"; message: string };
 }

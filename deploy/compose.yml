@@ -1,0 +1,12 @@
+services:
+  configurator:
+    build: ..
+    restart: unless-stopped
+    env_file: /etc/go-pods/configurator.env
+    ports:
+      - "127.0.0.1:3100:3000"
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

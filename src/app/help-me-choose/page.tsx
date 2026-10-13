@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { GuidedQuizFlow } from "@/features/guided-path/components/guided-quiz-flow";
 import { getGuidedQuizDefinition } from "@/features/guided-path/lib/get-guided-quiz-definition";
 import { getConfiguratorCatalogue } from "@/features/configurator/lib/get-configurator-catalogue";

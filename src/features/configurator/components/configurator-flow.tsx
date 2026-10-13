@@ -3,6 +3,7 @@
 import { startTransition, useEffect, useRef, useState, useReducer } from "react";
 
 import { CustomerDetailsSection } from "@/features/enquiry/components/customer-details-section";
+import { clearSubmissionAttempt, getSubmissionAttempt, type SubmissionAttempt } from "@/features/enquiry/lib/submission-attempt";
 import { submitConfiguratorEnquiry } from "@/features/enquiry/actions/submit-configurator-enquiry";
 import { ReviewSection } from "@/features/enquiry/components/review-section";
 import { buildReviewValidationSummary } from "@/features/enquiry/lib/build-review-validation-summary";
@@ -57,6 +58,9 @@ export function ConfiguratorFlow({
     useState<ConfiguratorValidationErrors>({});
   const [submissionResult, setSubmissionResult] =
     useState<ConfiguratorSubmissionResult | null>(null);
+  const pendingSubmission = useRef<SubmissionAttempt | null>(null);
+  const submissionInFlight = useRef(false);
+  const isMounted = useRef(true);
   const activeStepTopRef = useRef<HTMLDivElement | null>(null);
   const hasRenderedInitialStep = useRef(false);
 
@@ -80,6 +84,11 @@ export function ConfiguratorFlow({
   const furthestAvailableStepIndex = getFurthestAvailableStepIndex(state);
   const isFinalStep = activeIndex === configuratorSteps.length - 1;
   const hasSubmittedSuccessfully = submissionResult?.status === "success";
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
 
   useEffect(() => {
     if (!hasRenderedInitialStep.current) {
@@ -108,7 +117,7 @@ export function ConfiguratorFlow({
   }
 
   function handleSubmit() {
-    if (isSubmitting) {
+    if (submissionInFlight.current) {
       return;
     }
 
@@ -130,15 +139,40 @@ export function ConfiguratorFlow({
       return;
     }
 
+    // Lock synchronously, before the asynchronous digest or React state update.
+    submissionInFlight.current = true;
     setIsSubmitting(true);
     setValidationErrors({});
     setSubmissionResult(null);
 
     startTransition(async () => {
-      const result = await submitConfiguratorEnquiry(payload);
+      let result: ConfiguratorSubmissionResult;
+      try {
+        pendingSubmission.current = await getSubmissionAttempt(pendingSubmission.current, payload);
+        if (!isMounted.current) return;
+        result = await submitConfiguratorEnquiry(payload, pendingSubmission.current.id);
+      } catch {
+        result = {
+          status: "error",
+          errors: { form: "We could not confirm your enquiry. Please try again." },
+        };
+      }
+      // Keep the retry ID if navigation prevented the confirmation being shown.
+      if (!isMounted.current) return;
+      if (result.status === "error" && result.errors.form && !pendingSubmission.current?.persisted) {
+        result = {
+          ...result,
+          errors: { ...result.errors, form: `${result.errors.form} Please retry without reloading this page.` },
+        };
+      }
+      if (result.status === "success" && pendingSubmission.current) {
+        clearSubmissionAttempt(pendingSubmission.current);
+        pendingSubmission.current = null;
+      }
 
       setSubmissionResult(result);
       setValidationErrors(result.status === "error" ? result.errors : {});
+      submissionInFlight.current = false;
       setIsSubmitting(false);
 
       if (result.status === "error") {

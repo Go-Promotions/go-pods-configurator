@@ -1,14 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getConfiguratorCatalogue } from "@/features/configurator/lib/get-configurator-catalogue";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-vi.mock("@/lib/supabase/config", () => ({
-  hasPublicSupabaseEnv: () => true,
-}));
-vi.mock("@/lib/supabase/server", () => ({
-  createServerSupabaseClient: vi.fn(),
-}));
+import { getCatalogueRows } from "@/lib/configurator-api";
+vi.mock("@/lib/configurator-api", () => ({ isConfiguratorPreview: () => false, getCatalogueRows: vi.fn() }));
 
 describe("getConfiguratorCatalogue", () => {
   beforeEach(() => {
@@ -33,28 +27,12 @@ describe("getConfiguratorCatalogue", () => {
       updated_at: "2026-08-04T00:00:00.000Z",
     } as const;
 
-    const from = vi.fn((table: string) => {
-      const result = {
-        data: table === "models" ? [modelRow] : [],
-        error: null,
-      };
-      const query = {
-        select: () => query,
-        eq: () => query,
-        order: () => query,
-        then: (
-          resolve: (value: typeof result) => unknown,
-          reject?: (reason: unknown) => unknown,
-        ) => Promise.resolve(result).then(resolve, reject),
-      };
-
-      return query;
-    });
-
-    vi.mocked(createServerSupabaseClient).mockReturnValue({ from } as never);
+    vi.mocked(getCatalogueRows).mockResolvedValue({
+      models: [modelRow], model_specs: [], model_images: [], option_categories: [], options: [], option_images: [], option_model_compatibility: [], option_model_inclusions: [], option_package_inclusions: [],
+    } as never);
 
     await expect(getConfiguratorCatalogue()).resolves.toMatchObject({
-      source: "supabase",
+      source: "api",
       models: [
         {
           slug: "pioneer",

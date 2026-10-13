@@ -1,0 +1,25 @@
+[Unit]
+Description=Go-Pods configurator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gopods-configurator
+Group=gopods-configurator
+WorkingDirectory=/var/www/go-pods-configurator/current
+EnvironmentFile=/var/www/go-pods-configurator/shared/runtime.env
+Environment=NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=127.0.0.1 PORT=3100
+ExecStart=/opt/node-v24.21.0-linux-x64/bin/node server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/go-pods-configurator/shared/cache
+
+[Install]
+WantedBy=multi-user.target
