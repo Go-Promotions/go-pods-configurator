@@ -38,16 +38,7 @@ function getPdfFontBuffer() {
     return pdfFontBuffer;
   }
 
-  const fontPath = path.join(
-    process.cwd(),
-    "node_modules",
-    "next",
-    "dist",
-    "compiled",
-    "@vercel",
-    "og",
-    "Geist-Regular.ttf",
-  );
+  const fontPath = path.join(process.cwd(), "public", "fonts", "Geist-Regular.ttf");
 
   if (!fs.existsSync(fontPath)) {
     throw new Error(`PDF font file could not be found at ${fontPath}`);

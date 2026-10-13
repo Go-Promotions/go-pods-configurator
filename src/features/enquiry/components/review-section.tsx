@@ -47,7 +47,7 @@ export function ReviewSection({
           <p className="mt-2 text-sm leading-6 text-[var(--color-muted-foreground)]">
             We have saved your configuration and enquiry details successfully.
           </p>
-          {submissionResult.emailDelivery.status !== "sent" ? (
+          {submissionResult.emailDelivery.status !== "sent" && submissionResult.emailDelivery.status !== "queued" ? (
             <div className="mt-4 rounded-2xl border border-[#b58a4b] bg-[#fff7eb] p-4 text-sm leading-6 text-[#7a5722]">
               {submissionResult.emailDelivery.message}
             </div>
